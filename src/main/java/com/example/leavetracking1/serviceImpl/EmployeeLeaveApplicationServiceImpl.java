@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import com.example.leavetracking1.entity.Users;
 import com.example.leavetracking1.entity.LeaveApplication;
 import com.example.leavetracking1.entity.LeaveStatus;
+import com.example.leavetracking1.entity.LeaveType;
 import com.example.leavetracking1.exceptions.APIException;
 import com.example.leavetracking1.exceptions.LeaveNotFound;
 import com.example.leavetracking1.exceptions.UserNotFound;
@@ -55,6 +56,9 @@ public class EmployeeLeaveApplicationServiceImpl implements EmployeeLeaveApplica
             
             logger.info("leave application created by adding details");
             // Save the created leave application
+            
+            //intializing with null
+            leaveApplication.setType(LeaveType.NULL);
             LeaveApplication createdLeave = leaveApplicationRepo.save(leaveApplication);
 
             logger.info("Leave application submitted successfully - Employee ID: {}, Leave Application ID: {}",

@@ -5,4 +5,5 @@ public enum LeaveType {
 	 SICK_LEAVE,
 	 VACATION,
 	 PERSONAL_LEAVE,
+	 NULL
 }

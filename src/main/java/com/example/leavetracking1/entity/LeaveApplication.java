@@ -50,6 +50,9 @@ public class LeaveApplication {
     @Enumerated(EnumType.STRING)
     private LeaveStatus status;
     
+    @Enumerated(EnumType.STRING)
+    private LeaveType type;
+    
     @ManyToOne
     @JoinColumn(name = "employee_id")
     private Users employee;

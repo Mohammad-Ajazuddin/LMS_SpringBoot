@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import com.example.leavetracking1.entity.LeaveApplication;
 import com.example.leavetracking1.entity.LeaveStatus;
+import com.example.leavetracking1.entity.LeaveType;
 import com.example.leavetracking1.entity.Users;
 import com.example.leavetracking1.exceptions.LeaveNotFound;
 import com.example.leavetracking1.exceptions.UserNotFound;
@@ -99,6 +100,20 @@ public class ManagerLeaveApplicationServiceImpl implements ManagerLeaveApplicati
             if (leaveStatusUpdate.isStatus()) {
             	leaveApplication.setComment(leaveStatusUpdate.getComment());
                 leaveApplication.setStatus(LeaveStatus.APPROVED);
+                //based on given input type leave application type will be updated
+                switch(leaveStatusUpdate.getType()) {
+                case "sick":
+                	leaveApplication.setType(LeaveType.SICK_LEAVE);
+                	break;
+                case "personal":
+                	leaveApplication.setType(LeaveType.PERSONAL_LEAVE);
+                	break;
+                case "vaction":
+                	leaveApplication.setType(LeaveType.VACATION);
+                	break;
+                default:
+                	leaveApplication.setType(LeaveType.PERSONAL_LEAVE);
+                }
                 
             } else {
             	leaveApplication.setComment(leaveStatusUpdate.getComment());
