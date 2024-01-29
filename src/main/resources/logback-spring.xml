@@ -35,6 +35,9 @@
     <!-- Root logger configuration -->
     <root level="debug">
         <appender-ref ref="DEBUG_FILE" />
+        <appender-ref ref="ERROR_FILE" />
+        <appender-ref ref="INFO_FILE" />
+        <appender-ref ref="WARN_FILE" />
     </root>
 
     <!-- Logger specific configuration for ERROR logs -->
@@ -43,12 +46,12 @@
     </logger>
 
     <!-- Logger specific configuration for INFO logs -->
-    <logger name="com.example.package1" level="info">
+    <logger name="com.example.leavetracking1" level="info">
         <appender-ref ref="INFO_FILE" />
     </logger>
 
     <!-- Logger specific configuration for WARN logs -->
-    <logger name="com.example.package2" level="warn">
+    <logger name="com.example.leavetracking1" level="warn">
         <appender-ref ref="WARN_FILE" />
     </logger>
 
