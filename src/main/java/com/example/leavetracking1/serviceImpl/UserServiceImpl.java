@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import com.example.leavetracking1.entity.Role;
 import com.example.leavetracking1.entity.Users;
+import com.example.leavetracking1.exceptions.APIException;
 import com.example.leavetracking1.payload.UserDto;
 import com.example.leavetracking1.repository.UserRepository;
 import com.example.leavetracking1.service.UserService;
@@ -27,29 +28,30 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // Service method to create an employee
     @Override
     public UserDto createEmployee(UserDto userDto) {
+        try {
+            logger.info("Creating employee: {}", userDto);
+            
+            if(userRepository.findByEmail(userDto.getEmail())!=null) {
+        		throw new APIException("User with "+userDto.getEmail()+" mail already exist");
+        	}
 
-        logger.info("Creating employee: {}", userDto);
+            userDto.setPassword(passwordEncoder.encode(userDto.getPassword()));
 
-        // Encode the password before saving it to the database
-        userDto.setPassword(passwordEncoder.encode(userDto.getPassword()));
-        
-        // Map the UserDto to the Users entity
-        Users employee = modelMapper.map(userDto, Users.class);
+            Users employee = modelMapper.map(userDto, Users.class);
+            employee.setRole(Role.EMPLOYEE);
 
-        // Set the role for the employee (assuming Role.EMPLOYEE)
-        employee.setRole(Role.EMPLOYEE);
+            logger.debug("Saving employee: {}", employee);
 
-        logger.debug("Saving employee: {}", employee);
+            Users savedEmployee = userRepository.save(employee);
 
-        // Save the employee to the database
-        Users savedEmployee = userRepository.save(employee);
+            logger.info("Employee created: {}", savedEmployee);
 
-        logger.info("Employee created: {}", savedEmployee);
-
-        // Map the saved employee back to UserDto and return it
-        return modelMapper.map(savedEmployee, UserDto.class);
+            return modelMapper.map(savedEmployee, UserDto.class);
+        } catch (Exception e) {
+            logger.error("Exception during creating employee", e);
+            throw new APIException(e.getMessage());
+        }
     }
 }

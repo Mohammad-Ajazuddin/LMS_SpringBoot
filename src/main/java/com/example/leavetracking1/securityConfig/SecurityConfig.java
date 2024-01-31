@@ -29,7 +29,12 @@ public class SecurityConfig {
     // Bean for PasswordEncoder to encode passwords
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        try {
+        	return new BCryptPasswordEncoder();
+        }
+        catch(Exception e) {
+        	throw e;
+        }
     }
 
     // Bean for defining the security filter chain

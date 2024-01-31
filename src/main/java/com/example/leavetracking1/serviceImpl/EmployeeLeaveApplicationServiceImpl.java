@@ -1,3 +1,4 @@
+
 package com.example.leavetracking1.serviceImpl;
 
 import java.util.List;
@@ -36,97 +37,89 @@ public class EmployeeLeaveApplicationServiceImpl implements EmployeeLeaveApplica
 
     @Autowired
     private UserRepository userRepo;
-    
-    // Service method to apply for leave
+
     @Override
     public LeaveApplicationStatusDto applyForLeave(Long employeeId, LeaveApplicationDto leaveApplicationDto) {
         try {
-        	logger.info("Applying for leave - Employee ID: {}, Leave Application DTO: {}", employeeId, leaveApplicationDto);
+            logger.info("Applying for leave - Employee ID: {}, Leave Application DTO: {}", employeeId, leaveApplicationDto);
 
-            // Retrieve the employee by ID
             Users employee = userRepo.findById(employeeId).orElseThrow(
                     () -> new UserNotFound(String.format("Employee with ID %d not found", employeeId))
             );
-            logger.info("user details fetched from repository");
 
-            // Map the DTO to LeaveApplication entity
             LeaveApplication leaveApplication = modelMapper.map(leaveApplicationDto, LeaveApplication.class);
             leaveApplication.setStatus(LeaveStatus.PENDING);
             leaveApplication.setEmployee(employee);
-            
-            logger.info("leave application created by adding details");
-            // Save the created leave application
-            
-            //intializing with null
             leaveApplication.setType(LeaveType.NULL);
+
             LeaveApplication createdLeave = leaveApplicationRepo.save(leaveApplication);
 
             logger.info("Leave application submitted successfully - Employee ID: {}, Leave Application ID: {}",
                     employeeId, createdLeave.getId());
 
-            LeaveApplicationStatusDto leaveApplicationStatusDto=modelMapper.map(createdLeave, LeaveApplicationStatusDto.class);
+            LeaveApplicationStatusDto leaveApplicationStatusDto = modelMapper.map(createdLeave, LeaveApplicationStatusDto.class);
             leaveApplicationStatusDto.setEmployeeId(employeeId);
-            // Convert and return the created leave application as DTO
+
             return leaveApplicationStatusDto;
-        }catch(Exception e) {
-        	logger.info("Error while saving leave application");
-        	throw new APIException("exception occered in saving leave"+e);
+        } catch (Exception e) {
+            logger.error("Error while applying for leave", e);
+            throw new APIException(e.getMessage());
         }
     }
 
-    // Service method to get all leave applications for an employee
     @Override
     public List<UpdatedLeaveStatusDto> getAllLeaveApplications(Long employeeId) {
-        logger.info("Fetching all leave applications - Employee ID: {}", employeeId);
+        try {
+            logger.info("Fetching all leave applications - Employee ID: {}", employeeId);
 
-        // Retrieve all leave applications for the employee
-        List<LeaveApplication> leavesApplications = leaveApplicationRepo.findByEmployeeId(employeeId);
+            List<LeaveApplication> leavesApplications = leaveApplicationRepo.findByEmployeeId(employeeId);
 
-        // Convert leave applications to DTOs
-        List<UpdatedLeaveStatusDto> leaveApplicationStatusDtos = leavesApplications.stream()
-                .map(this::convertToUpdateLeaveDto)
-                .collect(Collectors.toList());
+            List<UpdatedLeaveStatusDto> leaveApplicationStatusDtos = leavesApplications.stream()
+                    .map(this::convertToUpdateLeaveDto)
+                    .collect(Collectors.toList());
 
-        logger.info("Retrieved {} leave applications - Employee ID: {}", leaveApplicationStatusDtos.size(), employeeId);
+            logger.info("Retrieved {} leave applications - Employee ID: {}", leaveApplicationStatusDtos.size(), employeeId);
 
-        // Return the list of leave application DTOs
-        return leaveApplicationStatusDtos;
+            return leaveApplicationStatusDtos;
+        } catch (Exception e) {
+            logger.error("Error while fetching all leave applications", e);
+            throw new APIException(e.getMessage());
+        }
     }
 
-    // Service method to get a specific leave application by its ID
     @Override
     public UpdatedLeaveStatusDto getLeaveApplicationById(Long employeeId, Long leaveApplicationId) {
-        logger.info("Fetching leave application by ID - Employee ID: {}, Leave Application ID: {}", employeeId, leaveApplicationId);
+        try {
+            logger.info("Fetching leave application by ID - Employee ID: {}, Leave Application ID: {}", employeeId, leaveApplicationId);
 
-        // Retrieve the leave application by its ID and employee ID
-        LeaveApplication leavesApplication = leaveApplicationRepo.findByIdAndEmployeeId(leaveApplicationId, employeeId)
-                .orElseThrow(() -> new LeaveNotFound(String.format(
-                        "Leave application with ID %d for employee ID %d not found", leaveApplicationId, employeeId)));
+            LeaveApplication leavesApplication = leaveApplicationRepo.findByIdAndEmployeeId(leaveApplicationId, employeeId)
+                    .orElseThrow(() -> new LeaveNotFound(String.format(
+                            "Leave application with ID %d for employee ID %d not found", leaveApplicationId, employeeId)));
 
-        // Convert the leave application to a DTO
-        return convertToUpdateLeaveDto(leavesApplication);
+            return convertToUpdateLeaveDto(leavesApplication);
+        } catch (Exception e) {
+            logger.error("Error while fetching leave application by ID", e);
+            throw new APIException(e.getMessage());
+        }
     }
 
-    // Helper method to convert LeaveApplication entity to DTO
-    private LeaveApplicationStatusDto convertToDto(LeaveApplication leaveApplication) {
-        return modelMapper.map(leaveApplication, LeaveApplicationStatusDto.class);
+    @Override
+    public long getUserIdByEmail(String loggedEmail) {
+        try {
+            logger.info("Fetching user ID by email - Email: {}", loggedEmail);
+
+            Users user = userRepo.findByEmail(loggedEmail).orElseThrow(
+                    () -> new UserNotFound(String.format("Employee with email %s not found", loggedEmail))
+            );
+
+            return user.getId();
+        } catch (Exception e) {
+            logger.error("Error while fetching user ID by email", e);
+            throw new APIException(e.getMessage());
+        }
     }
 
- // Helper method to convert LeaveApplication entity to UpdatedLeaveStatusDto 
     private UpdatedLeaveStatusDto convertToUpdateLeaveDto(LeaveApplication leaveApplication) {
         return modelMapper.map(leaveApplication, UpdatedLeaveStatusDto.class);
     }
-    
-	@Override
-	public long getUserIdByEmail(String loggedEmail) {
-		
-		
-		Users user=userRepo.findByEmail(loggedEmail).orElseThrow(
-				()-> new UserNotFound(String.format("Employee with email %s not found", loggedEmail))
-				);
-				
-		return user.getId();
-	}
-    
-    
 }

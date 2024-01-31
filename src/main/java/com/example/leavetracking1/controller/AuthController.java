@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.leavetracking1.entity.JWTAuthResponse;
 import com.example.leavetracking1.entity.LoginDto;
+import com.example.leavetracking1.payload.ResponseOutput;
 import com.example.leavetracking1.payload.UserDto;
 import com.example.leavetracking1.security.JwtTokenProvider;
 import com.example.leavetracking1.service.UserService;
@@ -41,40 +42,108 @@ public class AuthController {
     
     // Endpoint for creating an employee
     @PostMapping("/register/employee")
-    public ResponseEntity<UserDto> createUserEmployee(@RequestBody UserDto userDto){
-    	
-        logger.info("Received request to create employee: {}", userDto);
+    public ResponseEntity<ResponseOutput> createUserEmployee(@RequestBody UserDto userDto){
+    	ResponseOutput responseOutput;
+    	try {
+    		
+    		if(userDto.getName() == null || userDto.getName().isEmpty() ||
+    		        userDto.getEmail() == null || userDto.getEmail().isEmpty() ||
+    		        userDto.getPassword() == null || userDto.getPassword().isEmpty()) {
+    		        
+    		        String missingField = null;
 
-        // Create employee using UserService
-        UserDto createdEmployee = userService.createEmployee(userDto);
+    		        if (userDto.getName() == null || userDto.getName().isEmpty()) {
+    		            missingField = "name";
+    		        } else if (userDto.getEmail() == null || userDto.getEmail().isEmpty()) {
+    		            missingField = "email";
+    		        } else {
+    		            missingField = "password";
+    		        }
 
-        logger.info("Employee created successfully: {}", createdEmployee);
+    		        responseOutput = new ResponseOutput("failed", null, "Field (" + missingField + ") is mandatory. Failed to register employee");
+    		        return new ResponseEntity<>(responseOutput, HttpStatus.BAD_REQUEST);
+    		    }
+        	
+            logger.info("Received request to create employee: {}", userDto);
 
-        // Return the created employee and HTTP status 201 (CREATED)
-        return new ResponseEntity<>(createdEmployee, HttpStatus.CREATED);
+            // Create employee using UserService
+            UserDto createdEmployee = userService.createEmployee(userDto);
+
+            logger.info("Employee created successfully: {}", createdEmployee);
+            
+            responseOutput= new ResponseOutput("Success",null,"Successfully registerd employee");
+            
+            // Return the created employee and HTTP status 201 (CREATED)
+            return new ResponseEntity<>(responseOutput, HttpStatus.CREATED);
+    	}catch(Exception e) {
+    		logger.info("Error while registering employee");
+    		responseOutput= new ResponseOutput("failed",null,e.getMessage());
+    		return new ResponseEntity<>(responseOutput,HttpStatus.BAD_REQUEST);
+    	}
     }
     
     // Endpoint for creating a manager
     @PostMapping("/register/manager")
-    public ResponseEntity<UserDto> createManager(@RequestBody UserDto userDto){
+    public ResponseEntity<ResponseOutput> createManager(@RequestBody UserDto userDto){
     	
-        logger.info("Received request to create manager: {}", userDto);
+    	ResponseOutput responseOutput;
+        try {
+        	logger.info("Received request to create manager: {}", userDto);
+            
+        	if(userDto.getName() == null || userDto.getName().isEmpty() ||
+    		        userDto.getEmail() == null || userDto.getEmail().isEmpty() ||
+    		        userDto.getPassword() == null || userDto.getPassword().isEmpty()) {
+    		        
+    		        String missingField = null;
 
-        // Create manager using ManagerService
-        UserDto createdManager = managerService.createManager(userDto);
+    		        if (userDto.getName() == null || userDto.getName().isEmpty()) {
+    		            missingField = "name";
+    		        } else if (userDto.getEmail() == null || userDto.getEmail().isEmpty()) {
+    		            missingField = "email";
+    		        } else {
+    		            missingField = "password";
+    		        }
 
-        logger.info("Manager created successfully");
+    		        responseOutput = new ResponseOutput("failed", null, "Field (" + missingField + ") is mandatory. Failed to register maanager");
+    		        return new ResponseEntity<>(responseOutput, HttpStatus.BAD_REQUEST);
+    		    }
+            // Create manager using ManagerService
+            UserDto createdManager = managerService.createManager(userDto);
 
-        // Return the created manager and HTTP status 201 (CREATED)
-        return new ResponseEntity<>(createdManager, HttpStatus.CREATED);
+            logger.info("Manager created successfully");
+            
+            responseOutput= new ResponseOutput("Success",null,"Successfully registerd manager");
+
+            // Return the created manager and HTTP status 201 (CREATED)
+            return new ResponseEntity<>(responseOutput, HttpStatus.CREATED);
+        }catch(Exception e) {
+        	logger.info("Error while registering manager");
+    		responseOutput= new ResponseOutput("failed",null,e.getMessage());
+    		return new ResponseEntity<>(responseOutput,HttpStatus.BAD_REQUEST);
+        }
     }
     
     // Endpoint for user login
     @PostMapping("/login")
-    public ResponseEntity<JWTAuthResponse> loginuser(@RequestBody LoginDto loginDto){
+    public ResponseEntity<ResponseOutput> loginuser(@RequestBody LoginDto loginDto){
         
+    	ResponseOutput responseOutput;
         try {
             // Authenticate the user using Spring Security's AuthenticationManager
+        	if( loginDto.getEmail() == null || loginDto.getEmail().isEmpty() ||
+    		        loginDto.getPassword() == null || loginDto.getPassword().isEmpty()) {
+    		        
+    		        String missingField = null;
+
+    		        if (loginDto.getEmail() == null || loginDto.getEmail().isEmpty()) {
+    		            missingField = "email";
+    		        } else {
+    		            missingField = "password";
+    		        }
+
+    		        responseOutput = new ResponseOutput("failed", null, "Field (" + missingField + ") is mandatory. Failed to login");
+    		        return new ResponseEntity<>(responseOutput, HttpStatus.BAD_REQUEST);
+    		    }
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword())
             );
@@ -85,15 +154,17 @@ public class AuthController {
             // Generate a JWT token using JwtTokenProvider
             String token = jwtTokenProvider.generateToken(authentication);
             
+            responseOutput= new ResponseOutput("Success",new JWTAuthResponse(token),"User Logged in Succeessful");
             // Return the JWT token in a JWTAuthResponse and HTTP status 200 (OK)
-            return ResponseEntity.ok(new JWTAuthResponse(token));
+            return ResponseEntity.ok(responseOutput);
             
         } catch (Exception e) {
             // Log the exception (You might want to log it more appropriately)
             logger.error("Exception during login: {}", e);
             
+            responseOutput= new ResponseOutput("failed",null,e.getMessage());
             // Return HTTP status 400 (BAD REQUEST) for failed login
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>(responseOutput,HttpStatus.UNAUTHORIZED);
         }
     }
 }

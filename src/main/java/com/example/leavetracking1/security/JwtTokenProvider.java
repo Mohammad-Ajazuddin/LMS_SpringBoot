@@ -64,7 +64,7 @@ public class JwtTokenProvider {
             return true;
         } catch (Exception e) {
             logger.error("Error validating JWT Token", e);
-            throw new APIException("Token validation Issue");
+            throw new APIException(e.getMessage());
         }
     }
 }

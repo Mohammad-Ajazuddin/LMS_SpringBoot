@@ -3,7 +3,6 @@ package com.example.leavetracking1.payload;
 import java.time.LocalDate;
 
 import com.example.leavetracking1.entity.LeaveStatus;
-import com.example.leavetracking1.entity.Users;
 
 import lombok.Data;
 

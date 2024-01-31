@@ -56,6 +56,10 @@ public class CustomUserDetailsService implements UserDetailsService {
     // This method provides authorities (roles) for the user
     private Collection<? extends GrantedAuthority> getAuthorities(Role role) {
         // For simplicity, returning a single authority (role) based on the user's role
-        return Collections.singletonList(new SimpleGrantedAuthority(role.getRoleName()));
+        try {
+        	return Collections.singletonList(new SimpleGrantedAuthority(role.getRoleName()));
+        }catch(Exception e) {
+        	throw e;
+        }
     }
 }

@@ -19,8 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.leavetracking1.entity.LeaveApplication;
 import com.example.leavetracking1.payload.LeaveApplicationDto;
-import com.example.leavetracking1.payload.LeaveApplicationStatusDto;
 import com.example.leavetracking1.payload.LeaveStatusUpdate;
+import com.example.leavetracking1.payload.ResponseOutput;
 import com.example.leavetracking1.payload.UpdatedLeaveStatusDto;
 import com.example.leavetracking1.service.EmployeeLeaveApplicationService;
 import com.example.leavetracking1.service.ManagerLeaveApplicationService;
@@ -38,9 +38,11 @@ public class ManagerController {
     @Autowired
     private ManagerLeaveApplicationService managerLeaveApplicationService;
     
+    ResponseOutput responseOutput;
+    
     // Endpoint to get all leave applications 
     @GetMapping("{managerId}/leaves")
-    public ResponseEntity<List<UpdatedLeaveStatusDto>> getAllLeaves(
+    public ResponseEntity<ResponseOutput> getAllLeaves(
             @PathVariable(name="managerId") Long managerId,
             Authentication authentication
     ){
@@ -51,7 +53,8 @@ public class ManagerController {
         	
         	//checking whether logged user authorized or not
         	if(!loggedId.equals(managerId)) {
-        		return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        		responseOutput=new ResponseOutput("failed",null,"Unauthorized request");
+        		return new ResponseEntity<>(responseOutput,HttpStatus.UNAUTHORIZED);
         	}
         	
             logger.info("Fetching all leave applications for managerId: {}", managerId);
@@ -60,17 +63,20 @@ public class ManagerController {
             List<UpdatedLeaveStatusDto> allLeaves = managerLeaveApplicationService.getAllLeaveApplications(managerId);
             logger.info("Fetched {} leave applications successfully", allLeaves.size());
             
+            responseOutput=new ResponseOutput("Success",allLeaves,"Successfully retrieved all leaves");
          // Return the list of leave applications and HTTP status 200 (OK)
-            return new ResponseEntity<>(allLeaves, HttpStatus.OK);
+            return new ResponseEntity<>(responseOutput, HttpStatus.OK);
         } catch (Exception e) {
             logger.error("Error while fetching leave applications", e);
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            
+            responseOutput=new ResponseOutput("failed",null,e.getMessage());
+            return new ResponseEntity<>(responseOutput,HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
     
  // Endpoint to get all leave applications for a specific employee under a manager
     @GetMapping("{managerId}/leaves/{userId}")
-    public ResponseEntity<List<UpdatedLeaveStatusDto>> getAllLeavesByEmployee(
+    public ResponseEntity<ResponseOutput> getAllLeavesByEmployee(
             @PathVariable(name="managerId") Long managerId,
             @PathVariable(name="userId") Long employeeId,
             Authentication authentication
@@ -81,7 +87,8 @@ public class ManagerController {
         	Long loggedId=managerLeaveApplicationService.getUserIdByEmail(loggedMail);
         	//checking whether logged user authorized or not
         	if(!loggedId.equals(managerId)) {
-        		return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        		responseOutput=new ResponseOutput("failed",null,"Unauthorized request");
+        		return new ResponseEntity<>(responseOutput,HttpStatus.UNAUTHORIZED);
         	}
         	
             logger.info("Fetching all leave applications for managerId: {}", managerId);
@@ -90,17 +97,20 @@ public class ManagerController {
             List<UpdatedLeaveStatusDto> allLeaves = managerLeaveApplicationService.getAllLeavesByEmployee(managerId,employeeId);
             logger.info("Fetched {} leave applications successfully", allLeaves.size());
             
+            responseOutput=new ResponseOutput("Success",allLeaves,"Successfully retrieved all leaves");
          // Return the list of leave applications and HTTP status 200 (OK)
-            return new ResponseEntity<>(allLeaves, HttpStatus.OK);
+            return new ResponseEntity<>(responseOutput, HttpStatus.OK);
         } catch (Exception e) {
             logger.error("Error while fetching leave applications", e);
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            
+            responseOutput=new ResponseOutput("failed",null,e.getMessage());
+            return new ResponseEntity<>(responseOutput,HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
     
     // Endpoint to get a specific leave application for an employee under a manager
     @GetMapping("{managerId}/leaves/{employeeId}/leave/{leaveId}")
-    public ResponseEntity<UpdatedLeaveStatusDto> getLeave(
+    public ResponseEntity<ResponseOutput> getLeave(
             @PathVariable(name="managerId") Long managerId,
             @PathVariable(name="employeeId") Long employeeId,
             @PathVariable(name="leaveId") Long leaveId,
@@ -113,7 +123,8 @@ public class ManagerController {
         	Long loggedId=managerLeaveApplicationService.getUserIdByEmail(loggedMail);
         	//checking whether logged user authorized or not
         	if(!loggedId.equals(managerId)) {
-        		return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        		responseOutput=new ResponseOutput("failed",null,"Unauthorized request");
+        		return new ResponseEntity<>(responseOutput,HttpStatus.UNAUTHORIZED);
         	}
            
     		logger.info("Fetching leave application with id {} for managerId: {} and employeeId: {}", leaveId, managerId, employeeId);
@@ -122,17 +133,20 @@ public class ManagerController {
     		UpdatedLeaveStatusDto leave = managerLeaveApplicationService.getLeaveApplicationById(managerId, employeeId, leaveId);
             logger.info("Fetched leave application successfully");
             
+            responseOutput=new ResponseOutput("Success",leave,"Successfully retrieved leave");
             // Return the retrieved leave application and HTTP status 200 (OK)
-            return new ResponseEntity<>(leave, HttpStatus.OK);
+            return new ResponseEntity<>(responseOutput, HttpStatus.OK);
         } catch (Exception e) {
             logger.error("Error while fetching leave application", e);
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+           
+            responseOutput=new ResponseOutput("failed",null,e.getMessage());
+            return new ResponseEntity<>(responseOutput,HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
     
     // Endpoint to approve leave for an employee under a manager
     @PutMapping("{managerId}/leaves/{employeeId}/checkLeave/{leaveId}")
-    public ResponseEntity<UpdatedLeaveStatusDto> upadateLeave(
+    public ResponseEntity<ResponseOutput> upadateLeave(
             @PathVariable(name="managerId") Long managerId,
             @PathVariable(name="employeeId") Long employeeId,
             @PathVariable(name="leaveId") Long leaveId,
@@ -146,7 +160,8 @@ public class ManagerController {
         	Long loggedId=managerLeaveApplicationService.getUserIdByEmail(loggedMail);
         	//checking whether logged user authorized or not
         	if(!loggedId.equals(managerId)) {
-        		return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        		responseOutput=new ResponseOutput("failed",null,"Unauthorized request");
+        		return new ResponseEntity<>(responseOutput,HttpStatus.UNAUTHORIZED);
         	}
            
     		logger.info("Approving leave application with id {} for managerId: {} and employeeId: {}", leaveId, managerId, employeeId);
@@ -154,11 +169,22 @@ public class ManagerController {
     		UpdatedLeaveStatusDto updatedLeaveStatusDto = managerLeaveApplicationService.updateLeaveApplication(managerId, employeeId, leaveId,leaveStatusUpdate);
 
             logger.info("Leave application approved successfully");
+            
+            if(leaveStatusUpdate.isStatus()) {
+            	 responseOutput=new ResponseOutput("Success",updatedLeaveStatusDto,"Leave application approved successfully");
+            	
+            }else {
+            	 responseOutput=new ResponseOutput("Success",updatedLeaveStatusDto,"Leave application rejected");
+            }
+            
+            responseOutput=new ResponseOutput("Success",updatedLeaveStatusDto,"Successfully retrieved leave");
             // Return the updated leave application and HTTP status 200 (OK)
-            return new ResponseEntity<>(updatedLeaveStatusDto,HttpStatus.OK);
+            return new ResponseEntity<>(responseOutput,HttpStatus.OK);
     	}catch (Exception e) {
-            logger.error("Error while approving leave application", e);
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            logger.error("Error while checking leave application", e);
+           
+            responseOutput=new ResponseOutput("failed",null,e.getMessage());
+            return new ResponseEntity<>(responseOutput,HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

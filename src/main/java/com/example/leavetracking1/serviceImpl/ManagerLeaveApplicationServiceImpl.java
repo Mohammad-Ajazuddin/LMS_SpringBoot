@@ -13,6 +13,7 @@ import com.example.leavetracking1.entity.LeaveApplication;
 import com.example.leavetracking1.entity.LeaveStatus;
 import com.example.leavetracking1.entity.LeaveType;
 import com.example.leavetracking1.entity.Users;
+import com.example.leavetracking1.exceptions.APIException;
 import com.example.leavetracking1.exceptions.LeaveNotFound;
 import com.example.leavetracking1.exceptions.UserNotFound;
 import com.example.leavetracking1.payload.LeaveApplicationStatusDto;
@@ -36,119 +37,139 @@ public class ManagerLeaveApplicationServiceImpl implements ManagerLeaveApplicati
     @Autowired
     private UserRepository userRepo;
 
-    // Service method to get all leave applications for a manager and employee
     @Override
     public List<UpdatedLeaveStatusDto> getAllLeaveApplications(Long managerId) {
-        // Retrieve all leave applications
-        List<LeaveApplication> leaveApplications = leaveApplicationRepo.findAll();
+        try {
+            // Fetch all leave applications
+            List<LeaveApplication> leaveApplications = leaveApplicationRepo.findAll();
 
-        // Convert leave applications to updatedLeaveStatusDtos
-        List<UpdatedLeaveStatusDto> updatedLeaveStatusDto = leaveApplications.stream()
-                .map(this::convertToUpdateLeaveDto)
-                .collect(Collectors.toList());
+            // Convert leave applications to DTOs
+            List<UpdatedLeaveStatusDto> updatedLeaveStatusDto = leaveApplications.stream()
+                    .map(this::convertToUpdateLeaveDto)
+                    .collect(Collectors.toList());
 
-        logger.info("Retrieved {} leave applications for managerId: {}",
-        		updatedLeaveStatusDto.size(), managerId);
+            logger.info("Retrieved {} leave applications for managerId: {}", updatedLeaveStatusDto.size(), managerId);
 
-        return updatedLeaveStatusDto;
+            return updatedLeaveStatusDto;
+        } catch (Exception e) {
+            logger.error("Error while fetching all leave applications for manager", e);
+            throw new APIException(e.getMessage());
+        }
     }
-    
+
     @Override
-	public List<UpdatedLeaveStatusDto> getAllLeavesByEmployee(Long managerId, Long employeeId) {
-    	 // Retrieve all leave applications
-        List<LeaveApplication> leaveApplications = leaveApplicationRepo.findByEmployeeId(employeeId);
+    public List<UpdatedLeaveStatusDto> getAllLeavesByEmployee(Long managerId, Long employeeId) {
+        try {
+            // Fetch leave applications for a specific employee
+            List<LeaveApplication> leaveApplications = leaveApplicationRepo.findByEmployeeId(employeeId);
 
-        // Convert leave applications to updatedLeaveStatusDto
-        List<UpdatedLeaveStatusDto> updatedLeaveStatusDto = leaveApplications.stream()
-                .map(this::convertToUpdateLeaveDto)
-                .collect(Collectors.toList());
+            // Convert leave applications to DTOs
+            List<UpdatedLeaveStatusDto> updatedLeaveStatusDto = leaveApplications.stream()
+                    .map(this::convertToUpdateLeaveDto)
+                    .collect(Collectors.toList());
 
-        logger.info("Retrieved {} leave applications for managerId: {}",
-        		updatedLeaveStatusDto.size(), managerId);
+            logger.info("Retrieved {} leave applications for managerId: {}", updatedLeaveStatusDto.size(), managerId);
 
-        return updatedLeaveStatusDto;
-	}
-    
-    // Service method to get a specific leave application by its ID
+            return updatedLeaveStatusDto;
+        } catch (Exception e) {
+            logger.error("Error while fetching all leave applications for manager and employee", e);
+            throw new APIException(e.getMessage());
+        }
+    }
+
     @Override
     public UpdatedLeaveStatusDto getLeaveApplicationById(Long managerId, Long employeeId, Long leaveApplicationId) {
-        // Retrieve the leave application by its ID and employee ID
-        LeaveApplication leaveApplication = leaveApplicationRepo.findByIdAndEmployeeId(leaveApplicationId, employeeId)
-                .orElseThrow(() -> new LeaveNotFound(String.format(
-                        "Leave application with id %d for employee id %d not found", leaveApplicationId, employeeId)));
+        try {
+            // Fetch a specific leave application by its ID and employee ID
+            LeaveApplication leaveApplication = leaveApplicationRepo.findByIdAndEmployeeId(leaveApplicationId, employeeId)
+                    .orElseThrow(() -> new LeaveNotFound(String.format(
+                            "Leave application with id %d for employee id %d not found", leaveApplicationId, employeeId)));
 
-        // Convert the leave application to a updatedLeaveStatusDto
-        UpdatedLeaveStatusDto updatedLeaveStatusDto = convertToUpdateLeaveDto(leaveApplication);
+            // Convert the leave application to a DTO
+            UpdatedLeaveStatusDto updatedLeaveStatusDto = convertToUpdateLeaveDto(leaveApplication);
 
-        logger.info("Retrieved leave application by ID: {} for managerId: {} and employeeId: {}",
-                leaveApplicationId, managerId, employeeId);
-
-        return updatedLeaveStatusDto;
-    }
-
-    // Service method to update the status of a leave application
-    @Override
-    public UpdatedLeaveStatusDto updateLeaveApplication(Long managerId, Long employeeId, Long leaveApplicationId,LeaveStatusUpdate leaveStatusUpdate) {
-        // Retrieve the leave application by its ID and employee ID
-        LeaveApplication leaveApplication = leaveApplicationRepo.findByIdAndEmployeeId(leaveApplicationId, employeeId)
-                .orElseThrow(() -> new LeaveNotFound(String.format(
-                        "Leave application with id %d for employee id %d not found", leaveApplicationId, employeeId)));
-
-        // Check if the leave application; is in a pending state
-        if (leaveApplication.getStatus() == LeaveStatus.PENDING) 
-        {
-            if (leaveStatusUpdate.isStatus()) {
-            	leaveApplication.setComment(leaveStatusUpdate.getComment());
-                leaveApplication.setStatus(LeaveStatus.APPROVED);
-                //based on given input type leave application type will be updated
-                switch(leaveStatusUpdate.getType()) {
-                case "sick":
-                	leaveApplication.setType(LeaveType.SICK_LEAVE);
-                	break;
-                case "personal":
-                	leaveApplication.setType(LeaveType.PERSONAL_LEAVE);
-                	break;
-                case "vaction":
-                	leaveApplication.setType(LeaveType.VACATION);
-                	break;
-                default:
-                	leaveApplication.setType(LeaveType.PERSONAL_LEAVE);
-                }
-                
-            } else {
-            	leaveApplication.setComment(leaveStatusUpdate.getComment());
-                leaveApplication.setStatus(LeaveStatus.REJECTED);
-            }
-
-            // Save the updated leave application
-            LeaveApplication savedLeaveApplication = leaveApplicationRepo.save(leaveApplication);
-
-            // Convert the saved leave application to a DTO
-            UpdatedLeaveStatusDto updatedLeaveApplicationStatusDto = convertToUpdateLeaveDto(savedLeaveApplication);
-
-            logger.info("Updated leave application status. Leave application ID: {}, Manager ID: {}, Employee ID: {}",
+            logger.info("Retrieved leave application by ID: {} for managerId: {} and employeeId: {}",
                     leaveApplicationId, managerId, employeeId);
 
-            return updatedLeaveApplicationStatusDto;
+            return updatedLeaveStatusDto;
+        } catch (Exception e) {
+            logger.error("Error while fetching leave application by ID for manager and employee", e);
+            throw new APIException(e.getMessage());
         }
-
-        // If the leave application is not in a pending state, return the current status
-        return convertToUpdateLeaveDto(leaveApplication);
     }
 
-    // Helper method to convert LeaveApplication entity to UpdatedLeaveStatusDto 
+    @Override
+    public UpdatedLeaveStatusDto updateLeaveApplication(Long managerId, Long employeeId, Long leaveApplicationId, LeaveStatusUpdate leaveStatusUpdate) {
+        try {
+            // Fetch the leave application by its ID and employee ID
+            LeaveApplication leaveApplication = leaveApplicationRepo.findByIdAndEmployeeId(leaveApplicationId, employeeId)
+                    .orElseThrow(() -> new LeaveNotFound(String.format(
+                            "Leave application with id %d for employee id %d not found", leaveApplicationId, employeeId)));
+
+            if (leaveApplication.getStatus() == LeaveStatus.PENDING) {
+                if (leaveStatusUpdate.isStatus()) {
+                    // Update leave application status to APPROVED
+                	
+                    leaveApplication.setComment(leaveStatusUpdate.getComment());
+                    leaveApplication.setStatus(LeaveStatus.APPROVED);
+
+                    // Update leave application type based on input
+                    switch (leaveStatusUpdate.getType()) {
+                        case "sick":
+                            leaveApplication.setType(LeaveType.SICK_LEAVE);
+                            break;
+                        case "personal":
+                            leaveApplication.setType(LeaveType.PERSONAL_LEAVE);
+                            break;
+                        case "vacation":
+                            leaveApplication.setType(LeaveType.VACATION);
+                            break;
+                        default:
+                            leaveApplication.setType(LeaveType.PERSONAL_LEAVE);
+                    }
+
+                } else {
+                    // Update leave application status to REJECTED
+                    leaveApplication.setComment(leaveStatusUpdate.getComment());
+                    leaveApplication.setStatus(LeaveStatus.REJECTED);
+                }
+
+                // Save the updated leave application
+                LeaveApplication savedLeaveApplication = leaveApplicationRepo.save(leaveApplication);
+
+                // Convert the saved leave application to DTO
+                UpdatedLeaveStatusDto updatedLeaveApplicationStatusDto = convertToUpdateLeaveDto(savedLeaveApplication);
+
+                logger.info("Updated leave application status. Leave application ID: {}, Manager ID: {}, Employee ID: {}",
+                        leaveApplicationId, managerId, employeeId);
+
+                return updatedLeaveApplicationStatusDto;
+            }
+
+            // If the leave application is not in a pending state, return the updated status
+            return convertToUpdateLeaveDto(leaveApplication);
+        } catch (Exception e) {
+            logger.error("Error while updating leave application status for manager and employee", e);
+            throw new APIException(e.getMessage());
+        }
+    }
+
     private UpdatedLeaveStatusDto convertToUpdateLeaveDto(LeaveApplication leaveApplication) {
         return modelMapper.map(leaveApplication, UpdatedLeaveStatusDto.class);
     }
 
-    //Get Email from the provided userId
-	@Override
-	public long getUserIdByEmail(String loggedEmail) {
-		Users user=userRepo.findByEmail(loggedEmail).orElseThrow(
-				()-> new UserNotFound(String.format("Employee with email %s not found", loggedEmail))
-				);
-				
-		return user.getId();
-	}
-
+  //Get Email from the provided userId
+  	@Override
+  	public long getUserIdByEmail(String loggedEmail) {
+  		try {
+  			Users user=userRepo.findByEmail(loggedEmail).orElseThrow(
+  	  				()-> new UserNotFound(String.format("Employee with email %s not found", loggedEmail))
+  	  				);
+  	  				
+  	  		return user.getId();
+  		}catch(Exception e)
+  		{
+  			throw new APIException(e.getMessage());
+  		}
+  	}
 }

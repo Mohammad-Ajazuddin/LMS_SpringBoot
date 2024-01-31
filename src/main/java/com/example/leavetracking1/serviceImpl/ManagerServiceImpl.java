@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import com.example.leavetracking1.entity.Role;
 import com.example.leavetracking1.entity.Users;
+import com.example.leavetracking1.exceptions.APIException;
 import com.example.leavetracking1.payload.UserDto;
 import com.example.leavetracking1.repository.UserRepository;
 import com.example.leavetracking1.service.ManagerService;
@@ -27,28 +28,30 @@ public class ManagerServiceImpl implements ManagerService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // Service method to create a manager
     @Override
     public UserDto createManager(UserDto userDto) {
-        logger.info("Creating manager: {}", userDto);
+        try {
+        	
+        	if(userRepo.findByEmail(userDto.getEmail())!=null) {
+        		throw new APIException("User with "+userDto.getEmail()+" mail already exist");
+        	}
+            logger.info("Creating manager: {}", userDto);
 
-        // Encode the password before saving it to the database
-        userDto.setPassword(passwordEncoder.encode(userDto.getPassword()));
+            userDto.setPassword(passwordEncoder.encode(userDto.getPassword()));
 
-        // Map the UserDto to the Users entity
-        Users manager = modelMapper.map(userDto, Users.class);
+            Users manager = modelMapper.map(userDto, Users.class);
+            manager.setRole(Role.MANAGER);
 
-        // Set the role for the manager (assuming Role.MANAGER)
-        manager.setRole(Role.MANAGER);
+            logger.debug("Saving manager: {}", manager);
 
-        logger.debug("Saving manager: {}", manager);
+            Users savedManager = userRepo.save(manager);
 
-        // Save the manager to the database
-        Users savedManager = userRepo.save(manager);
+            logger.info("Manager created: {}", savedManager);
 
-        logger.info("Manager created: {}", savedManager);
-
-        // Map the saved manager back to UserDto and return it
-        return modelMapper.map(savedManager, UserDto.class);
+            return modelMapper.map(savedManager, UserDto.class);
+        } catch (Exception e) {
+            logger.error("Error while creating manager", e);
+            throw new APIException(e.getMessage());
+        }
     }
 }
