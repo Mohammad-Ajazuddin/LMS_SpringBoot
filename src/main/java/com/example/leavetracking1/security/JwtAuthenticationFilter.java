@@ -40,7 +40,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = getToken(request);
 
             // Validate the token and set authentication in SecurityContext
-            if (StringUtils.hasText(token) && !token.isBlank() && jwtTokenProvider.validateToken(token)) {
+            if (StringUtils.hasText(token) && !token.isEmpty() && jwtTokenProvider.validateToken(token)) {
                 String email = jwtTokenProvider.getEmailFromToken(token);
 
                 // Load user details from the database
@@ -53,6 +53,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 
                 logger.info("User authenticated successfully: {}", email);
+            }
+            else {
+            	throw new APIException("Token is empty");
             }
 
             // Continue with the filter chain
