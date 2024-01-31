@@ -39,7 +39,7 @@ public class JwtTokenProvider {
             return token;
         } catch (Exception e) {
             logger.error("Error generating JWT Token", e);
-            throw e;
+            throw new APIException(e.getMessage());
         }
     }
 
@@ -53,7 +53,7 @@ public class JwtTokenProvider {
             return email;
         } catch (Exception e) {
             logger.error("Error extracting email from JWT Token", e);
-            throw e;
+            throw new APIException(e.getMessage());
         }
     }
 

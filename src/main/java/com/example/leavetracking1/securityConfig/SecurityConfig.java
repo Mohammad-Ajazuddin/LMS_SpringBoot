@@ -15,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.example.leavetracking1.exceptions.APIException;
 import com.example.leavetracking1.security.JwtAuthenticationFilter;
 
 @Configuration
@@ -33,7 +34,7 @@ public class SecurityConfig {
         	return new BCryptPasswordEncoder();
         }
         catch(Exception e) {
-        	throw e;
+        	throw new APIException(e.getMessage());
         }
     }
 

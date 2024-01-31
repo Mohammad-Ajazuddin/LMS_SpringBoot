@@ -9,6 +9,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 @SpringBootApplication
 public class Leavetracking1Application {
 
+	
 	public static void main(String[] args) {
 		SpringApplication.run(Leavetracking1Application.class, args);
 	}

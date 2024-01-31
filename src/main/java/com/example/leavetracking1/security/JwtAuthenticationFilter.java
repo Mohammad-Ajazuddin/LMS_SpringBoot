@@ -10,6 +10,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.example.leavetracking1.exceptions.APIException;
+import com.example.leavetracking1.payload.ResponseOutput;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,7 +40,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = getToken(request);
 
             // Validate the token and set authentication in SecurityContext
-            if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
+            if (StringUtils.hasText(token) && !token.isBlank() && jwtTokenProvider.validateToken(token)) {
                 String email = jwtTokenProvider.getEmailFromToken(token);
 
                 // Load user details from the database
@@ -56,9 +60,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         } catch (Exception e) {
 
             logger.error("Authentication failed: {}", e.getMessage());
+            
+            ResponseOutput responseOutput = new ResponseOutput("failed", null, e.getMessage());
+            
+            ObjectMapper objectMapper = new ObjectMapper();
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Unauthorized: " + e.getMessage());
-            return;
+            String jsonResponse = objectMapper.writeValueAsString(responseOutput);
+            response.getWriter().write(jsonResponse);
+//            throw new APIException("Unauthorized: " + e.getMessage());
         }
     }
 
@@ -73,7 +82,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             return null;
         }catch(Exception e) {
-        	throw e;
+        	throw new APIException(e.getMessage());
         }
     }
 }
