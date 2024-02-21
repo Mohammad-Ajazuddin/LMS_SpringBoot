@@ -54,9 +54,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 logger.info("User authenticated successfully: {}", email);
             }
-            else {
-            	throw new APIException("Token is empty");
-            }
 
             // Continue with the filter chain
             filterChain.doFilter(request, response);

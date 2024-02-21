@@ -33,7 +33,7 @@ public class UserServiceImpl implements UserService {
         try {
             logger.info("Creating employee: {}", userDto);
             
-            if(userRepository.findByEmail(userDto.getEmail())!=null) {
+            if(!userRepository.findByEmail(userDto.getEmail()).isEmpty()) {
         		throw new APIException("User with "+userDto.getEmail()+" mail already exist");
         	}
 
@@ -49,7 +49,8 @@ public class UserServiceImpl implements UserService {
             logger.info("Employee created: {}", savedEmployee);
 
             return modelMapper.map(savedEmployee, UserDto.class);
-        } catch (Exception e) {
+        } 
+        catch (Exception e) {
             logger.error("Exception during creating employee", e);
             throw new APIException(e.getMessage());
         }
