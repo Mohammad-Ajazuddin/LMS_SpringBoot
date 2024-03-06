@@ -1,5 +1,8 @@
 package com.example.leavetracking1.controller;
 
+import java.util.List;
+import java.util.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +12,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,12 +21,17 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.leavetracking1.entity.JWTAuthResponse;
 import com.example.leavetracking1.entity.LoginDto;
+import com.example.leavetracking1.entity.Users;
+import com.example.leavetracking1.payload.ManagerDto;
 import com.example.leavetracking1.payload.ResponseOutput;
 import com.example.leavetracking1.payload.UserDto;
+import com.example.leavetracking1.repository.UserRepository;
 import com.example.leavetracking1.security.JwtTokenProvider;
 import com.example.leavetracking1.service.UserService;
 import com.example.leavetracking1.service.ManagerService;
 
+
+//@CrossOrigin
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -36,11 +46,14 @@ public class AuthController {
     
     @Autowired
     private UserService userService;
+    
+    @Autowired
+    private UserRepository userRepo;
    
     @Autowired
     private ManagerService managerService;
     
-    // Endpoint for creating an employee
+    // End point for creating an employee
     @PostMapping("/register/employee")
     public ResponseEntity<ResponseOutput> createUserEmployee(@RequestBody UserDto userDto){
     	ResponseOutput responseOutput;
@@ -48,7 +61,10 @@ public class AuthController {
     		
     		if(userDto.getName() == null || userDto.getName().isEmpty() ||
     		        userDto.getEmail() == null || userDto.getEmail().isEmpty() ||
-    		        userDto.getPassword() == null || userDto.getPassword().isEmpty()) {
+    		        userDto.getPassword() == null || userDto.getPassword().isEmpty()||
+    		        userDto.getMobile()==null|| userDto.getMobile().isEmpty()||
+    		        userDto.getDateOfJoining()==null||userDto.getDateOfJoining().toString().trim().isEmpty() ||
+    		        userDto.getManagerId()==null) {
     		        
     		        String missingField = null;
 
@@ -56,8 +72,14 @@ public class AuthController {
     		            missingField = "name";
     		        } else if (userDto.getEmail() == null || userDto.getEmail().isEmpty()) {
     		            missingField = "email";
-    		        } else {
+    		        } else if(userDto.getPassword() == null || userDto.getPassword().isEmpty()){
     		            missingField = "password";
+    		        }else if(userDto.getMobile()==null|| userDto.getMobile().isEmpty()) {
+    		        	missingField = "mobile";
+    		        }else if(userDto.getDateOfJoining()==null || userDto.getDateOfJoining().toString().trim().isEmpty()){
+    		        	missingField = "datOfJoining";
+    		        }else {
+    		        	missingField = "managerId";
     		        }
 
     		        responseOutput = new ResponseOutput("failed", null, "Field (" + missingField + ") is mandatory. Failed to register employee");
@@ -84,33 +106,40 @@ public class AuthController {
     
     // Endpoint for creating a manager
     @PostMapping("/register/manager")
-    public ResponseEntity<ResponseOutput> createManager(@RequestBody UserDto userDto){
+    public ResponseEntity<ResponseOutput> createManager(@RequestBody ManagerDto managerDto){
     	
     	ResponseOutput responseOutput;
         try {
-        	logger.info("Received request to create manager: {}", userDto);
+        	logger.info("Received request to create manager: {}", managerDto);
+        	
             
-        	if(userDto.getName() == null || userDto.getName().isEmpty() ||
-    		        userDto.getEmail() == null || userDto.getEmail().isEmpty() ||
-    		        userDto.getPassword() == null || userDto.getPassword().isEmpty()) {
+        	if(managerDto.getName() == null || managerDto.getName().isEmpty() ||
+    		        managerDto.getEmail() == null || managerDto.getEmail().isEmpty() ||
+    		        managerDto.getPassword() == null || managerDto.getPassword().isEmpty()||
+    		        managerDto.getMobile()==null|| managerDto.getMobile().isEmpty()||
+    		        managerDto.getDateOfJoining()==null || managerDto.getDateOfJoining().toString().trim().isEmpty()) {
     		        
     		        String missingField = null;
 
-    		        if (userDto.getName() == null || userDto.getName().isEmpty()) {
+    		        if (managerDto.getName() == null || managerDto.getName().isEmpty()) {
     		            missingField = "name";
-    		        } else if (userDto.getEmail() == null || userDto.getEmail().isEmpty()) {
+    		        } else if (managerDto.getEmail() == null || managerDto.getEmail().isEmpty()) {
     		            missingField = "email";
-    		        } else {
+    		        } else if(managerDto.getPassword() == null || managerDto.getPassword().isEmpty()){
     		            missingField = "password";
+    		        }else if(managerDto.getMobile()==null|| managerDto.getMobile().isEmpty()) {
+    		        	missingField = "mobile";
+    		        }else if(managerDto.getDateOfJoining()==null || managerDto.getDateOfJoining().toString().trim().isEmpty()) {
+    		        	missingField = "datOfJoining";
     		        }
 
     		        responseOutput = new ResponseOutput("failed", null, "Field (" + missingField + ") is mandatory. Failed to register maanager");
     		        return new ResponseEntity<>(responseOutput, HttpStatus.BAD_REQUEST);
     		    }
             // Create manager using ManagerService
-            UserDto createdManager = managerService.createManager(userDto);
+            ManagerDto createdManager = managerService.createManager(managerDto);
 
-            logger.info("Manager created successfully");
+            logger.info("Manager created successfully: {}",createdManager);
             
             responseOutput= new ResponseOutput("Success",null,"Successfully registerd manager");
 
@@ -129,7 +158,6 @@ public class AuthController {
         
     	ResponseOutput responseOutput;
         try {
-            // Authenticate the user using Spring Security's AuthenticationManager
         	if( loginDto.getEmail() == null || loginDto.getEmail().isEmpty() ||
     		        loginDto.getPassword() == null || loginDto.getPassword().isEmpty()) {
     		        
@@ -144,6 +172,7 @@ public class AuthController {
     		        responseOutput = new ResponseOutput("failed", null, "Field (" + missingField + ") is mandatory. Failed to login");
     		        return new ResponseEntity<>(responseOutput, HttpStatus.BAD_REQUEST);
     		    }
+            // Authenticate the user using Spring Security's AuthenticationManager
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword())
             );
@@ -154,7 +183,14 @@ public class AuthController {
             // Generate a JWT token using JwtTokenProvider
             String token = jwtTokenProvider.generateToken(authentication);
             
-            responseOutput= new ResponseOutput("Success",new JWTAuthResponse(token),"User Logged in Succeessful");
+            Users currentUser = userRepo.findByEmail(loginDto.getEmail()).get();
+
+            
+            Object[] details = {new JWTAuthResponse(token),currentUser};
+            
+//            responseOutput= new ResponseOutput("Success",new JWTAuthResponse(token),"User Logged in Succeessful"); 
+            responseOutput= new ResponseOutput("Success",details,"User Logged in Succeessful"); 
+            
             // Return the JWT token in a JWTAuthResponse and HTTP status 200 (OK)
             return ResponseEntity.ok(responseOutput);
             
@@ -167,4 +203,32 @@ public class AuthController {
             return new ResponseEntity<>(responseOutput,HttpStatus.UNAUTHORIZED);
         }
     }
+    
+    @GetMapping("/getAllManagers")
+    public ResponseEntity<ResponseOutput> getAllManagers()
+    {
+    	List<Users> allManagers = managerService.getAllManagers();
+    	ResponseOutput responseOutput = new ResponseOutput("Success",allManagers,"All managers retrieved");
+    	
+    	return new ResponseEntity<>(responseOutput,HttpStatus.OK);
+    	
+    }
+    
+//    @PostMapping("/getCurrentUser")
+//    public ResponseEntity<ResponseOutput> getRole(String email)
+//    {
+//    	Users currentUser;
+//    	try {
+//        currentUser = userRepo.findByEmail(email).get();
+//    	}
+//    	catch(Exception e) {
+//        	ResponseOutput responseOutput = new ResponseOutput("Failed",null,e.getMessage());
+//        	return new ResponseEntity<>(responseOutput,HttpStatus.NOT_FOUND);
+//        }
+//    	
+//    	ResponseOutput responseOutput = new ResponseOutput("Success",currentUser,"Current user retrieved");
+//    	
+//    	return new ResponseEntity<>(responseOutput,HttpStatus.OK);
+//    	
+//    }
 }

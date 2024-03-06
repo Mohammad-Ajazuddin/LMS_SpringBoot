@@ -1,16 +1,20 @@
 package com.example.leavetracking1.controller;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.repository.query.Param;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,13 +22,20 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.leavetracking1.entity.LeaveApplication;
+import com.example.leavetracking1.payload.DatesDto;
 import com.example.leavetracking1.payload.LeaveApplicationDto;
 import com.example.leavetracking1.payload.LeaveStatusUpdate;
+import com.example.leavetracking1.payload.LeaveTypesDto;
+import com.example.leavetracking1.entity.LeaveTypes;
 import com.example.leavetracking1.payload.ResponseOutput;
 import com.example.leavetracking1.payload.UpdatedLeaveStatusDto;
+import com.example.leavetracking1.repository.LeaveInfoViewRepository;
+import com.example.leavetracking1.repository.LeaveTypeRepo;
 import com.example.leavetracking1.service.EmployeeLeaveApplicationService;
+import com.example.leavetracking1.service.LeaveTypesService;
 import com.example.leavetracking1.service.ManagerLeaveApplicationService;
 
+@CrossOrigin
 @RestController
 @RequestMapping("/manager")
 @PreAuthorize("hasRole('MANAGER')")
@@ -38,9 +49,18 @@ public class ManagerController {
     @Autowired
     private ManagerLeaveApplicationService managerLeaveApplicationService;
     
+    @Autowired
+    private LeaveTypesService leaveTypesService;
+    
+    @Autowired
+    private LeaveTypeRepo leaveTypesRepo;
+    
+    @Autowired
+    private LeaveInfoViewRepository leaveInfoViewRepo;
+    
     ResponseOutput responseOutput;
     
-    // Endpoint to get all leave applications 
+    // End point to get all leave applications 
     @GetMapping("{managerId}/leaves")
     public ResponseEntity<ResponseOutput> getAllLeaves(
             @PathVariable(name="managerId") Long managerId,
@@ -63,7 +83,15 @@ public class ManagerController {
             List<UpdatedLeaveStatusDto> allLeaves = managerLeaveApplicationService.getAllLeaveApplications(managerId);
             logger.info("Fetched {} leave applications successfully", allLeaves.size());
             
-            responseOutput=new ResponseOutput("Success",allLeaves,"Successfully retrieved all leaves");
+            if(allLeaves.size()==0)
+            {
+            	responseOutput=new ResponseOutput("Success",allLeaves,"No leave Applications");
+            }
+            else
+            {
+            	responseOutput=new ResponseOutput("Success",allLeaves,"Successfully retrieved all leaves");
+            }
+            
          // Return the list of leave applications and HTTP status 200 (OK)
             return new ResponseEntity<>(responseOutput, HttpStatus.OK);
         } catch (Exception e) {
@@ -97,7 +125,15 @@ public class ManagerController {
             List<UpdatedLeaveStatusDto> allLeaves = managerLeaveApplicationService.getAllLeavesByEmployee(managerId,employeeId);
             logger.info("Fetched {} leave applications successfully", allLeaves.size());
             
-            responseOutput=new ResponseOutput("Success",allLeaves,"Successfully retrieved all leaves");
+            if(allLeaves.size()==0)
+            {
+            	responseOutput=new ResponseOutput("Success",allLeaves,"No leave Applications");
+            }
+            else
+            {
+            	responseOutput=new ResponseOutput("Success",allLeaves,"Successfully retrieved all leaves");
+            }
+            
          // Return the list of leave applications and HTTP status 200 (OK)
             return new ResponseEntity<>(responseOutput, HttpStatus.OK);
         } catch (Exception e) {
@@ -177,7 +213,7 @@ public class ManagerController {
             	 responseOutput=new ResponseOutput("Success",updatedLeaveStatusDto,"Leave application rejected");
             }
             
-            responseOutput=new ResponseOutput("Success",updatedLeaveStatusDto,"Successfully retrieved leave");
+            responseOutput=new ResponseOutput("Success",updatedLeaveStatusDto,"Successfully approved leave");
             // Return the updated leave application and HTTP status 200 (OK)
             return new ResponseEntity<>(responseOutput,HttpStatus.OK);
     	}catch (Exception e) {
@@ -187,4 +223,180 @@ public class ManagerController {
             return new ResponseEntity<>(responseOutput,HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    
+    @PostMapping("{managerId}/addLeaveType")
+    public ResponseEntity<ResponseOutput> addLeaveType(@PathVariable(name="managerId") 
+    Long managerId, 
+    Authentication authentication, 
+    @RequestBody LeaveTypesDto leaveTypesDto)
+    {
+    	try {
+    		
+    		String loggedMail=authentication.getName();
+        	
+        	Long loggedId=managerLeaveApplicationService.getUserIdByEmail(loggedMail);
+        	//checking whether logged user authorized or not
+        	if(!loggedId.equals(managerId)) {
+        		responseOutput=new ResponseOutput("failed",null,"Unauthorized request");
+        		return new ResponseEntity<>(responseOutput,HttpStatus.UNAUTHORIZED);
+        	}
+        	
+            logger.info("Add leaveTypes called by managerId {}", managerId);
+            
+            LeaveTypesDto addedLeaveTypeDto = leaveTypesService.addLeaveType(leaveTypesDto);
+            
+            responseOutput = new ResponseOutput("Success",addedLeaveTypeDto,"LeaveType added");
+            return new ResponseEntity<>(responseOutput,HttpStatus.OK);
+            
+    
+    	}catch (Exception e) {
+            logger.error("Error while adding leaveType", e);
+           
+            responseOutput=new ResponseOutput("failed",null,e.getMessage());
+            return new ResponseEntity<>(responseOutput,HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    
+    @PutMapping("{managerId}/updateLeaveType")
+    public ResponseEntity<ResponseOutput> updateLeaveType(@PathVariable(name="managerId") 
+    Long managerId, 
+    Authentication authentication, 
+    @RequestBody LeaveTypesDto leaveTypesDto)
+    {
+    	try {
+    		
+    		String loggedMail=authentication.getName();
+        	
+        	Long loggedId=managerLeaveApplicationService.getUserIdByEmail(loggedMail);
+        	//checking whether logged user authorized or not
+        	if(!loggedId.equals(managerId)) {
+        		responseOutput=new ResponseOutput("failed",null,"Unauthorized request");
+        		return new ResponseEntity<>(responseOutput,HttpStatus.UNAUTHORIZED);
+        	}
+        	
+            logger.info("Update leaveTypes called by managerId {}", managerId);
+            
+            LeaveTypesDto updatedLeaveTypeDto = leaveTypesService.updateLeaveType(leaveTypesDto);
+            
+            
+            responseOutput = new ResponseOutput("Success",updatedLeaveTypeDto,"LeaveType updated");
+            return new ResponseEntity<>(responseOutput,HttpStatus.OK);
+            
+    
+    	}catch (Exception e) {
+            logger.error("Error while updating leaveType", e);
+           
+            responseOutput=new ResponseOutput("failed",null,e.getMessage());
+            return new ResponseEntity<>(responseOutput,HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    @CrossOrigin
+    @GetMapping("{managerId}/getEmployeeWiseLeaves")
+    public ResponseEntity<ResponseOutput> getEmployeeWiseLeaveInfo(@PathVariable(name="managerId") 
+    Long managerId, 
+    Authentication authentication)
+    {
+    	try {
+    		
+    		String loggedMail=authentication.getName();
+        	
+        	Long loggedId=managerLeaveApplicationService.getUserIdByEmail(loggedMail);
+        	//checking whether logged user authorized or not
+        	if(!loggedId.equals(managerId)) {
+        		responseOutput=new ResponseOutput("failed",null,"Unauthorized request");
+        		return new ResponseEntity<>(responseOutput,HttpStatus.UNAUTHORIZED);
+        	}
+        	
+            logger.info("EmployeeWiseLeaveInfo called by managerId {}", managerId);
+            
+            List<Object[]> employeeWiseLeaveInfo = leaveInfoViewRepo.getLeaveSummaryByManagerId(managerId);
+            
+            
+            responseOutput = new ResponseOutput("Success",employeeWiseLeaveInfo,"EmployeeWiseLeavesRetrieved");
+            return new ResponseEntity<>(responseOutput,HttpStatus.OK);
+            
+    
+    	}catch (Exception e) {
+            logger.error("Error while retrieving employeewise leaves info", e);
+           
+            responseOutput=new ResponseOutput("failed",null,e.getMessage());
+            return new ResponseEntity<>(responseOutput,HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    
+    @PostMapping("{managerId}/getDateWiseLeaveInfo")
+    public ResponseEntity<ResponseOutput> getDateWiseLeaveInfo(@PathVariable(name="managerId") 
+    Long managerId,@RequestBody DatesDto datesDto,
+    Authentication authentication)
+    {
+    	try {
+    		
+    		String loggedMail=authentication.getName();
+        	
+        	Long loggedId=managerLeaveApplicationService.getUserIdByEmail(loggedMail);
+        	//checking whether logged user authorized or not
+        	if(!loggedId.equals(managerId)) {
+        		responseOutput=new ResponseOutput("failed",null,"Unauthorized request");
+        		return new ResponseEntity<>(responseOutput,HttpStatus.UNAUTHORIZED);
+        	}
+        	
+            logger.info("DateWiseLeaveInfo called by managerId {}", managerId);
+            
+            List<Object[]> dateWiseLeaveInfo = leaveInfoViewRepo.findLeaveDetailsByManagerIdAndStartDateBetween(managerId,datesDto.getStartDate(),datesDto.getEndDate());
+            
+            if(dateWiseLeaveInfo.isEmpty())
+            {
+            	responseOutput = new ResponseOutput("Success",dateWiseLeaveInfo,"No leaves Information with specified dates");
+            }
+            else
+            {
+            	responseOutput = new ResponseOutput("Success",dateWiseLeaveInfo,"DateWiseLeavesRetrieved");
+            }
+            
+            return new ResponseEntity<>(responseOutput,HttpStatus.OK);
+            
+    
+    	}catch (Exception e) {
+            logger.error("Error while retrieving datewise leaves info", e);
+           
+            responseOutput=new ResponseOutput("failed",null,e.getMessage());
+            return new ResponseEntity<>(responseOutput,HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+     
+    @GetMapping("{managerId}/getMaxLeavesDetails")
+    public ResponseEntity<ResponseOutput> getMaxLeavesDetails(@PathVariable(name="managerId") Long managerId, Authentication authentication)
+    {
+    	try {
+    		
+    		String loggedMail=authentication.getName();
+        	
+        	Long loggedId=managerLeaveApplicationService.getUserIdByEmail(loggedMail);
+        	//checking whether logged user authorized or not
+        	if(!loggedId.equals(managerId)) {
+        		responseOutput=new ResponseOutput("failed",null,"Unauthorized request");
+        		return new ResponseEntity<>(responseOutput,HttpStatus.UNAUTHORIZED);
+        	}
+        	
+            logger.info("getMaxLeavesDeatils called by managerId {}", managerId);
+            
+            List<LeaveTypes> leaveTypesInfo = leaveTypesRepo.findAll();
+            		
+            	responseOutput = new ResponseOutput("Success",leaveTypesInfo,"Leave Types information retrieved");
+            
+            return new ResponseEntity<>(responseOutput,HttpStatus.OK);
+            
+    
+    	}catch (Exception e) {
+            logger.error("Error while retrieving leave types info", e);
+           
+            responseOutput=new ResponseOutput("failed",null,e.getMessage());
+            return new ResponseEntity<>(responseOutput,HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
 }
+    

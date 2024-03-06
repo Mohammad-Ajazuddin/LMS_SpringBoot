@@ -15,7 +15,7 @@ public class UpdatedLeaveStatusDto {
 	private LocalDate endDate;
 	private String reason;
 	private LeaveStatus status;
-	private LeaveType type;
+	private LeaveType Type;
 	private Long employeeId;
 	private String comment;
 

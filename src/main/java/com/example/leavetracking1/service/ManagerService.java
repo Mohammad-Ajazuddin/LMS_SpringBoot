@@ -1,8 +1,11 @@
 package com.example.leavetracking1.service;
 
+import java.util.List;
+
+import com.example.leavetracking1.entity.Users;
 import com.example.leavetracking1.payload.ManagerDto;
-import com.example.leavetracking1.payload.UserDto;
 
 public interface ManagerService {
-	public UserDto createManager(UserDto userDto);
+	public ManagerDto createManager(ManagerDto managerDto);
+	public List<Users> getAllManagers();
 }

@@ -3,6 +3,7 @@ package com.example.leavetracking1.payload;
 import java.time.LocalDate;
 
 import com.example.leavetracking1.entity.LeaveStatus;
+import com.example.leavetracking1.entity.LeaveType;
 
 import lombok.Data;
 
@@ -13,6 +14,7 @@ public class LeaveApplicationStatusDto {
 	private LocalDate startDate;
 	private LocalDate endDate;
 	private String reason;
+	private LeaveType Type;
 	private LeaveStatus status;
 	private Long employeeId;
 }

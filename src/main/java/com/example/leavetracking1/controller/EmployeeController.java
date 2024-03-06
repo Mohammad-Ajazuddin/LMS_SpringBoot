@@ -55,28 +55,36 @@ public class EmployeeController {
 
             if(leaveApplicationDto.getStartDate()==null || leaveApplicationDto.getStartDate().toString().trim().isEmpty() ||
             		leaveApplicationDto.getEndDate()==null || leaveApplicationDto.getEndDate().toString().trim().isEmpty() ||
-            		leaveApplicationDto.getReason()==null || leaveApplicationDto.getReason().isEmpty()) {
+            		leaveApplicationDto.getReason()==null || leaveApplicationDto.getReason().isEmpty() ||
+            		leaveApplicationDto.getType()==null || leaveApplicationDto.getType().toString().isEmpty()) {
     		        
     		        String missingField = null;
 
     		        if (leaveApplicationDto.getStartDate()==null || leaveApplicationDto.getStartDate().toString().trim().isEmpty() ) {
-    		            missingField = "startDate";
+    		            missingField = "StartDate";
     		        } else if (leaveApplicationDto.getEndDate()==null || leaveApplicationDto.getEndDate().toString().trim().isEmpty()) {
-    		            missingField = "endDate";
-    		        } else {
+    		            missingField = "EndDate";
+    		        } else if(leaveApplicationDto.getReason()==null || leaveApplicationDto.getReason().isEmpty()){
     		            missingField = "Reason";
-    		        }
+    		        }else
+    		        	missingField = "Type";
 
-    		        responseOutput = new ResponseOutput("failed", null, "Field (" + missingField + ") is mandatory. for apply Leave");
+    		        responseOutput = new ResponseOutput("Failed", null, "Field (" + missingField + ") is mandatory. for apply Leave");
     		        return new ResponseEntity<>(responseOutput, HttpStatus.BAD_REQUEST);
     		    }
             
             // Apply for leave using the EmployeeLeaveApplicationService
             LeaveApplicationStatusDto createdLeaveDto = employeeLeaveApplicationService.applyForLeave(employeeId, leaveApplicationDto);
-
-            logger.info("Leave application submitted successfully - leaveApplicationDto: {}", createdLeaveDto);
+            if(createdLeaveDto==null)
+            {
+            	logger.info("Cannot Apply Leave as Max Leaves exhausted or more duration than available - leaveApplicationDto: {}", createdLeaveDto);
+            	responseOutput=new ResponseOutput("Failed",null,"Employee acannot apply for leave - maximum leaves exhausted or more duration than available ");
+            }
+            else {
+            	logger.info("Leave application submitted successfully - leaveApplicationDto: {}", createdLeaveDto);
             
-            responseOutput=new ResponseOutput("Success",null,"EMployee SuccessFully applied for leave");
+            	responseOutput=new ResponseOutput("Success",null,"Employee SuccessFully applied for leave");
+            }
 
             // Return the created leave application and HTTP status 201 (CREATED)
             return new ResponseEntity<>(responseOutput, HttpStatus.CREATED);
